@@ -158,15 +158,15 @@ const combineImages = async (
   
   const selectImagesFromZip = async (zipPath: string, partsArray: Array<{ src: string; name: string; visibility: string, x: string, y: string }>) => {
     const zip = new AdmZip(zipPath);
-    const imageBuffersWithOffsets  = [];
+    const imageBuffersWithOffsets  = Array<ImageBufferWithOffset>();
   
     for (const part of partsArray) {
       const entry = zip.getEntry(part.src);
-      if (!entry.isDirectory) {
-        var layer : ImageBufferWithOffset = {buffer: entry.getData(), x: parseInt(part.x), y: parseInt(part.y)};
+      if (!entry?.isDirectory) {
+        var layer : ImageBufferWithOffset = {buffer: entry?.getData() as Buffer, x: parseInt(part.x), y: parseInt(part.y)};
 
         imageBuffersWithOffsets .push({
-            buffer: entry.getData(), x: parseInt(part.x), y: parseInt(part.y)
+            buffer: entry?.getData() as Buffer, x: parseInt(part.x), y: parseInt(part.y)
         });
       }
     }
@@ -185,9 +185,9 @@ const combineImages = async (
     try {
       const zip = new AdmZip(zipPath);
       const stackXmlEntry = zip.getEntry('stack.xml');
-      const stackXmlBuffer = stackXmlEntry.getData();
-      const partsArray = (await getLayersFromXml(stackXmlBuffer)).reverse();    
-      const { width, height } = await getImageSizeFromXml(stackXmlBuffer);
+      const stackXmlBuffer = stackXmlEntry?.getData();
+      const partsArray = (await getLayersFromXml(stackXmlBuffer as Buffer)).reverse();    
+      const { width, height } = await getImageSizeFromXml(stackXmlBuffer as Buffer);
       const imageBuffers = await selectImagesFromZip(zipPath, partsArray);
   
       if (imageBuffers.length < 2) {
