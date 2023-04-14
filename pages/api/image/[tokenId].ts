@@ -5,6 +5,7 @@ import fs from 'fs'
 import AdmZip from 'adm-zip'
 import sharp from 'sharp'
 import xml2js from 'xml2js'
+import { ethers } from "ethers";
 
 type LayerInfo = {
     src: string;
@@ -20,6 +21,21 @@ x: number;
 y: number;
 };
   
+const INFURA_KEY = process.env.INFURA_KEY
+const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS
+
+
+// ERC721 ABI
+const erc721Abi = [
+    "function name() view returns (string)",
+    "function symbol() view returns (string)",
+    "function tokenURI(uint256 tokenId) view returns (string)",
+  ];
+
+  // Set up your Ethereum provider
+const provider = new ethers.providers.JsonRpcProvider(
+    "https://mainnet.infura.io/v3/" + INFURA_KEY
+  );
 
 const getImageSizeFromXml = async (xmlBuffer: Buffer) => {
     const parser = new xml2js.Parser()
@@ -100,7 +116,6 @@ const getImageSizeFromXml = async (xmlBuffer: Buffer) => {
         x: layer.$.x,
         y: layer.$.y
       }))
-      .filter((layer: LayerInfo) => layer.visibility === 'visible')
 
   
       if (layerInfoArray.length > 0) {
@@ -156,13 +171,17 @@ const combineImages = async (
     return compositeImage.toBuffer();
   };
   
-  const selectImagesFromZip = async (zipPath: string, partsArray: Array<{ src: string; name: string; visibility: string, x: string, y: string }>) => {
+  const selectImagesFromZip = async (zipPath: string, partsArray: Array<LayerInfo>, attributesArray:  any) => {
     const zip = new AdmZip(zipPath);
     const imageBuffersWithOffsets  = Array<ImageBufferWithOffset>();
-  
+
+  // Extract the values from the attributesArray
+  const attributeValues = attributesArray.map((attribute: any) => attribute.value);
+    
+
     for (const part of partsArray) {
       const entry = zip.getEntry(part.src);
-      if (!entry?.isDirectory) {
+      if (!entry?.isDirectory && attributeValues.includes(part.name)) {
         var layer : ImageBufferWithOffset = {buffer: entry?.getData() as Buffer, x: parseInt(part.x), y: parseInt(part.y)};
 
         imageBuffersWithOffsets .push({
@@ -174,21 +193,50 @@ const combineImages = async (
     return imageBuffersWithOffsets ;
   };  
 
+
+  async function fetchTokenMetadata(tokenURI: string) {
+    try {
+      const response = await fetch(tokenURI);
+      if (!response.ok) {
+        throw new Error("Failed to fetch token metadata");
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error(error);
+      return null;
+    }
+  }  
+
   const renderOraImage = async (req: NextApiRequest, res: NextApiResponse) => {
     const zipPath = path.join(process.cwd(), 'assets', 'arcadians.ora');
-  
+    const { tokenId } = req.query;
+
+    const contract = new ethers.Contract(CONTRACT_ADDRESS as string, erc721Abi, provider);
+
+    // Retrieve NFT attributes
+    const tokenURI = await contract.tokenURI(tokenId);
+
+    // Fetch token metadata from tokenURI
+    const metadata = await fetchTokenMetadata(tokenURI);
+    const attributes = metadata?.attributes;
+
+    if (!metadata) {
+      return res.status(500).json({ error: "Failed to fetch token metadata" });
+    }
+
     if (!fs.existsSync(zipPath)) {
       res.status(404).json({ error: 'ZIP file not found' });
       return;
     }
-  
+ 
     try {
       const zip = new AdmZip(zipPath);
       const stackXmlEntry = zip.getEntry('stack.xml');
       const stackXmlBuffer = stackXmlEntry?.getData();
       const partsArray = (await getLayersFromXml(stackXmlBuffer as Buffer)).reverse();    
       const { width, height } = await getImageSizeFromXml(stackXmlBuffer as Buffer);
-      const imageBuffers = await selectImagesFromZip(zipPath, partsArray);
+      const imageBuffers = await selectImagesFromZip(zipPath, partsArray, attributes);
   
       if (imageBuffers.length < 2) {
         res.status(400).json({ error: 'Not enough images in the selected partsArray to combine' });
