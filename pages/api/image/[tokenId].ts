@@ -21,8 +21,6 @@ x: number;
 y: number;
 };
   
-const INFURA_KEY = process.env.NEXT_PUBLIC_INFURA_KEY
-const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS
 
 
 // ERC721 ABI
@@ -31,11 +29,6 @@ const erc721Abi = [
     "function symbol() view returns (string)",
     "function tokenURI(uint256 tokenId) view returns (string)",
   ];
-
-  // Set up your Ethereum provider
-const provider = new ethers.providers.JsonRpcProvider(
-    "https://mainnet.infura.io/v3/" + INFURA_KEY
-  );
 
 const getImageSizeFromXml = async (xmlBuffer: Buffer) => {
     const parser = new xml2js.Parser()
@@ -211,6 +204,16 @@ const combineImages = async (
   const renderOraImage = async (req: NextApiRequest, res: NextApiResponse) => {
     const zipPath = path.join(process.cwd(), 'assets', 'arcadians.ora');
     const { tokenId } = req.query;
+
+    const INFURA_KEY = process.env.INFURA_KEY
+    const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS
+    
+    // console.log(INFURA_KEY + " " + CONTRACT_ADDRESS)
+
+    // Set up your Ethereum provider
+    const provider = new ethers.providers.JsonRpcProvider(
+      "https://mainnet.infura.io/v3/" + INFURA_KEY
+    );
 
     const contract = new ethers.Contract(CONTRACT_ADDRESS as string, erc721Abi, provider);
 
