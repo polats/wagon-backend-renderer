@@ -21,8 +21,8 @@ x: number;
 y: number;
 };
   
-const INFURA_KEY = process.env.INFURA_KEY
-const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS
+const INFURA_KEY = process.env.NEXT_PUBLIC_INFURA_KEY
+const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS
 
 
 // ERC721 ABI
