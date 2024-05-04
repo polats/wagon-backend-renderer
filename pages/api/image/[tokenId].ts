@@ -204,6 +204,7 @@ const combineImages = async (
   const renderOraImage = async (req: NextApiRequest, res: NextApiResponse) => {
     const zipPath = path.join(process.cwd(), 'assets', 'wagons.ora');
     const { tokenId } = req.query;
+    const parsedTokenId = parseInt(tokenId as string);
     
     /*
 
@@ -232,28 +233,95 @@ const combineImages = async (
     const attributes = metadata?.attributes;
     */
 
-    const attributes = [
-      {
-        trait_type: "Beast",
-        value: "PinkOx"
-      },
-      {
-        trait_type: "Cover",
-        value: "Canvas"
-      },
-      {
-        trait_type: "FrontWheel",
-        value: "RedPineFront"
-      },
-      {
-        trait_type: "RearWheel",
-        value: "RedPineRear"
-      },
-      {
-        trait_type: "Bed",
-        value: "Oak"
-      }
-
+    const testAttributes = [
+      [ // 0
+        {
+          trait_type: "Beast",
+          value: "PinkOx"
+        },
+        {
+          trait_type: "Cover",
+          value: "Canvas"
+        },
+        {
+          trait_type: "FrontWheel",
+          value: "RedPineFront"
+        },
+        {
+          trait_type: "RearWheel",
+          value: "RedPineRear"
+        },
+        {
+          trait_type: "Bed",
+          value: "Oak"
+        }
+      ],
+      [ // 1
+        {
+          trait_type: "Beast",
+          value: "BlackOx"
+        },
+        {
+          trait_type: "Cover",
+          value: "Cotton"
+        },
+        {
+          trait_type: "FrontWheel",
+          value: "YellowPineFront"
+        },
+        {
+          trait_type: "RearWheel",
+          value: "BlueSpruceRear"
+        },
+        {
+          trait_type: "Bed",
+          value: "Spruce"
+        }
+      ],
+      [ // 2
+        {
+          trait_type: "Beast",
+          value: "WhiteOx"
+        },
+        {
+          trait_type: "Cover",
+          value: "Cloth"
+        },
+        {
+          trait_type: "FrontWheel",
+          value: "GreenOakFront"
+        },
+        {
+          trait_type: "RearWheel",
+          value: "YellowPineRear"
+        },
+        {
+          trait_type: "Bed",
+          value: "Pine"
+        }
+      ],
+      [ // 3
+        {
+          trait_type: "Beast",
+          value: "WhiteOx"
+        },
+        {
+          trait_type: "Cover",
+          value: "Cloth"
+        },
+        {
+          trait_type: "FrontWheel",
+          value: "RedPineFront"
+        },
+        {
+          trait_type: "RearWheel",
+          value: "RedPineRear"
+        },
+        {
+          trait_type: "Bed",
+          value: "Pine"
+        }
+      ]      
     ]
 
     if (!fs.existsSync(zipPath)) {
@@ -268,7 +336,7 @@ const combineImages = async (
 
       const partsArray = (await getLayersFromXml(stackXmlBuffer as Buffer)).reverse();    
       const { width, height } = await getImageSizeFromXml(stackXmlBuffer as Buffer);
-      const imageBuffers = await selectImagesFromZip(zipPath, partsArray, attributes);
+      const imageBuffers = await selectImagesFromZip(zipPath, partsArray, testAttributes[parsedTokenId]);
       
       if (imageBuffers.length < 2) {
         res.status(400).json({ error: 'Not enough images in the selected partsArray to combine' });
