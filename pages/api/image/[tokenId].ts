@@ -202,8 +202,10 @@ const combineImages = async (
   }  
 
   const renderOraImage = async (req: NextApiRequest, res: NextApiResponse) => {
-    const zipPath = path.join(process.cwd(), 'assets', 'arcadians.ora');
+    const zipPath = path.join(process.cwd(), 'assets', 'wagons.ora');
     const { tokenId } = req.query;
+    
+    /*
 
     const INFURA_KEY = process.env.INFURA_KEY
     const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS
@@ -222,11 +224,37 @@ const combineImages = async (
 
     // Fetch token metadata from tokenURI
     const metadata = await fetchTokenMetadata(tokenURI);
-    const attributes = metadata?.attributes;
 
     if (!metadata) {
       return res.status(500).json({ error: "Failed to fetch token metadata" });
     }
+
+    const attributes = metadata?.attributes;
+    */
+
+    const attributes = [
+      {
+        trait_type: "Beast",
+        value: "PinkOx"
+      },
+      {
+        trait_type: "Cover",
+        value: "Canvas"
+      },
+      {
+        trait_type: "FrontWheel",
+        value: "RedPineFront"
+      },
+      {
+        trait_type: "RearWheel",
+        value: "RedPineRear"
+      },
+      {
+        trait_type: "Bed",
+        value: "Oak"
+      }
+
+    ]
 
     if (!fs.existsSync(zipPath)) {
       res.status(404).json({ error: 'ZIP file not found' });
@@ -237,15 +265,16 @@ const combineImages = async (
       const zip = new AdmZip(zipPath);
       const stackXmlEntry = zip.getEntry('stack.xml');
       const stackXmlBuffer = stackXmlEntry?.getData();
+
       const partsArray = (await getLayersFromXml(stackXmlBuffer as Buffer)).reverse();    
       const { width, height } = await getImageSizeFromXml(stackXmlBuffer as Buffer);
       const imageBuffers = await selectImagesFromZip(zipPath, partsArray, attributes);
-  
+      
       if (imageBuffers.length < 2) {
         res.status(400).json({ error: 'Not enough images in the selected partsArray to combine' });
         return;
       }
-  
+
       const combinedImageBuffer = await combineImages(imageBuffers, width, height);
         
       res.setHeader('Content-Type', 'image/png');
